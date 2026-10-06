@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "memory": {
+      "type": "http",
+      "url": "https://brain-production-9a93.up.railway.app/mcp",
+      "headersHelper": "sh \"$CLAUDE_PLUGIN_ROOT/bin/headers.sh\""
+    }
+  }
+}

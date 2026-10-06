@@ -1,0 +1,7 @@
+{
+  "name": "hiccup",
+  "owner": { "name": "Hiccup" },
+  "plugins": [
+    { "name": "brain", "source": "./plugins/brain", "description": "The company brain: rules, traps and blueprints delivered when they matter, and a tool to ask it." }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "sh \"$CLAUDE_PLUGIN_ROOT/bin/moment.sh\" session-start 8", "timeout": 15 } ] }
+    ],
+    "PostToolUse": [
+      { "matcher": "Edit|Write|MultiEdit|NotebookEdit", "hooks": [ { "type": "command", "command": "sh \"$CLAUDE_PLUGIN_ROOT/bin/moment.sh\" post-tool-use 3", "timeout": 8 } ] }
+    ]
+  }
+}
