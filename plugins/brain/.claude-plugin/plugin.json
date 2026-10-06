@@ -1,5 +1,5 @@
 {
   "name": "brain",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Connects every Claude Code session to the company brain: a short list at launch, the rules of a file at its first edit, and tools to recall, read blueprints and remember."
 }
