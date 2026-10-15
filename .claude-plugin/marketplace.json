@@ -1,7 +1,18 @@
 {
   "name": "hiccup",
-  "owner": { "name": "Hiccup" },
+  "owner": {
+    "name": "Hiccup"
+  },
   "plugins": [
-    { "name": "brain", "source": "./plugins/brain", "description": "The company brain: rules, traps and blueprints delivered when they matter, and a tool to ask it." }
+    {
+      "name": "brain",
+      "source": "./plugins/brain",
+      "description": "The company brain: rules, traps and blueprints delivered when they matter, and a tool to ask it."
+    },
+    {
+      "name": "hiccup-data",
+      "source": "./plugins/hiccup-data",
+      "description": "Read-only Hiccup data for Claude, with your Google login. Needs the ClaudeAnalytics access."
+    }
   ]
 }
