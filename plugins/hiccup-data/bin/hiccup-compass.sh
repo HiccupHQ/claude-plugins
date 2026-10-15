@@ -7,12 +7,11 @@ grep -q '\[profile hiccup-mongo-admin\]' "$HOME/.aws/config" 2>/dev/null || prin
 # Read/write for people with the MongoProdAdmin role; read-only views for everyone else.
 PROFILE=hiccup-claude-analytics
 "$AWS" sts get-caller-identity --profile hiccup-mongo-admin >/dev/null 2>&1 && PROFILE=hiccup-mongo-admin
-if [ "$PROFILE" = hiccup-claude-analytics ]; then
-  URI='mongodb+srv://hiccup-prod.clqls.mongodb.net/?authMechanism=MONGODB-AWS&authSource=%24external&readPreference=secondary&readPreferenceTags=nodeType:ANALYTICS'
-else
-  URI='mongodb+srv://hiccup-prod.clqls.mongodb.net/?authMechanism=MONGODB-AWS&authSource=%24external'
-fi
-printf '%s' "$URI" | pbcopy
-# Compass reads AWS_PROFILE only at start, so a running Compass must quit first.
-if pgrep -xq "MongoDB Compass"; then osascript -e 'quit app "MongoDB Compass"' >/dev/null 2>&1; while pgrep -xq "MongoDB Compass"; do sleep 1; done; fi
-open --env AWS_PROFILE="$PROFILE" -a "MongoDB Compass" || osascript -e 'display alert "Hiccup Compass" message "Install MongoDB Compass first: mongodb.com/products/compass"'
+eval "$("$AWS" configure export-credentials --profile "$PROFILE" --format env)"
+# Compass cannot read the SSO login, so the connection string carries the temporary keys (valid until the login ends).
+OPTS='authMechanism=MONGODB-AWS&authSource=%24external'
+[ "$PROFILE" = hiccup-claude-analytics ] && OPTS="$OPTS&readPreference=secondary&readPreferenceTags=nodeType:ANALYTICS"
+enc() { printf '%s' "$1" | /usr/bin/sed -e 's/%/%25/g' -e 's#/#%2F#g' -e 's/+/%2B/g' -e 's/=/%3D/g' -e 's/:/%3A/g' -e 's/@/%40/g'; }
+printf 'mongodb+srv://%s:%s@hiccup-prod.clqls.mongodb.net/?%s&authMechanismProperties=AWS_SESSION_TOKEN:%s' \
+  "$(enc "$AWS_ACCESS_KEY_ID")" "$(enc "$AWS_SECRET_ACCESS_KEY")" "$OPTS" "$(enc "$AWS_SESSION_TOKEN")" | pbcopy
+open -a "MongoDB Compass" 2>/dev/null || osascript -e 'display alert "Hiccup Compass" message "Install MongoDB Compass first: mongodb.com/products/compass"'
