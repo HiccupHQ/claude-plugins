@@ -26,6 +26,6 @@ if [ -n "$NPX" ] && [ -d "$DESK" ]; then
 fi
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then exit 0; fi
 echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
-"$AWS" sso login --sso-session hiccup >/dev/null 2>&1 || { echo "hiccup-data: login did not finish. Type /hiccup-data:data-login to try again." >&2; exit 0; }
+"$AWS" sso login --sso-session hiccup >/dev/null 2>&1 || { echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2; exit 0; }
 "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to ClaudeAnalytics." >&2
 exit 0
