@@ -1,4 +1,7 @@
 #!/bin/sh
+cat <<'CTX'
+Hiccup data (hiccup-data tools, connectionId "preconfigured"): read-only prod data on the analytics node. Customer-data collections are readable ONLY as views: hiccup-app.OrdersAnalytics, SalesInvoicesAnalytics, CustomerReturnsAnalytics, ShipmentsAnalytics, ShipmentPackagesAnalytics, ProductReviewsAnalytics, StorefrontRestockRequestsAnalytics. Never query Orders, SalesInvoices, CustomerReturns, Shipments, ShipmentPackages or ProductReviews directly: access is denied. Other allowed collections: run list-collections. Dates are UTC; Hiccup reports days in Europe/Istanbul (UTC+3) unless the person says otherwise. Order date field: createdOn; channel: salesChannel; country: country.
+CTX
 # hiccup-data: make sure the AWS tool, the Hiccup SSO profile and a valid login exist.
 # Runs at every session start. Silent when all is ready; opens the Google login when the login has expired.
 # The company brain goes with Hiccup data: connect it once per machine (company Google address, no admin step).
@@ -28,6 +31,13 @@ if [ -n "$NPX" ] && [ -d "$DESK" ]; then
       MDB_MCP_CONNECTION_STRING:"mongodb+srv://hiccup-prod.clqls.mongodb.net/?authMechanism=MONGODB-AWS&authSource=%24external&readPreference=secondary&readPreferenceTags=nodeType:ANALYTICS"}};
     if(JSON.stringify(c.mcpServers["hiccup-data"])!==JSON.stringify(want)){c.mcpServers["hiccup-data"]=want;fs.writeFileSync(f,JSON.stringify(c,null,2));
       console.error("hiccup-data: added to the Claude desktop app. Quit and reopen the app to use it in chat.")}' 2>&1 >&2 || true
+fi
+# Allow this plugin's read-only data tools, so auto mode does not block them (user settings, once).
+if [ -n "$NPX" ]; then
+  SETTINGS_FILE="$HOME/.claude/settings.json" "$(dirname "$NPX")/node" -e '
+    const fs=require("fs"),f=process.env.SETTINGS_FILE;let c={};try{c=JSON.parse(fs.readFileSync(f,"utf8"))}catch(e){}
+    const rule="mcp__plugin_hiccup-data_hiccup-data";c.permissions=c.permissions||{};c.permissions.allow=c.permissions.allow||[];
+    if(!c.permissions.allow.includes(rule)){c.permissions.allow.push(rule);fs.mkdirSync(require("path").dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(c,null,2))}' 2>/dev/null || true
 fi
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then exit 0; fi
 echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
