@@ -39,6 +39,12 @@ if [ -n "$NPX" ]; then
     const rule="mcp__plugin_hiccup-data_hiccup-data";c.permissions=c.permissions||{};c.permissions.allow=c.permissions.allow||[];
     if(!c.permissions.allow.includes(rule)){c.permissions.allow.push(rule);fs.mkdirSync(require("path").dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(c,null,2))}' 2>/dev/null || true
 fi
+# "Hiccup Compass" app in ~/Applications: opens Compass with the Hiccup login (rebuilt when the plugin moves).
+APP="$HOME/Applications/Hiccup Compass.app"; SRC="$CLAUDE_PLUGIN_ROOT/bin/hiccup-compass.sh"
+if [ -n "$CLAUDE_PLUGIN_ROOT" ] && ! grep -qs "$SRC" "$APP/Contents/Resources/Scripts/main.scpt.txt"; then
+  mkdir -p "$HOME/Applications"; rm -rf "$APP"
+  osacompile -o "$APP" -e "do shell script \"sh '$SRC' >/dev/null 2>&1 &\"" >/dev/null 2>&1 && printf '%s' "$SRC" > "$APP/Contents/Resources/Scripts/main.scpt.txt"
+fi
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then exit 0; fi
 echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
 "$AWS" sso login --sso-session hiccup >/dev/null 2>&1 || { echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2; exit 0; }

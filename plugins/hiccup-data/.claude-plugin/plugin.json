@@ -1,6 +1,6 @@
 {
   "name": "hiccup-data",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Hiccup data and the company brain in one install: read-only prod data through the MongoDB MCP with your Google login (AWS SSO, ClaudeAnalytics), and the brain connected on first start.",
   "dependencies": [
     "brain"
