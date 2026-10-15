@@ -13,4 +13,6 @@ else
   URI='mongodb+srv://hiccup-prod.clqls.mongodb.net/?authMechanism=MONGODB-AWS&authSource=%24external'
 fi
 printf '%s' "$URI" | pbcopy
+# Compass reads AWS_PROFILE only at start, so a running Compass must quit first.
+if pgrep -xq "MongoDB Compass"; then osascript -e 'quit app "MongoDB Compass"' >/dev/null 2>&1; while pgrep -xq "MongoDB Compass"; do sleep 1; done; fi
 open --env AWS_PROFILE="$PROFILE" -a "MongoDB Compass" || osascript -e 'display alert "Hiccup Compass" message "Install MongoDB Compass first: mongodb.com/products/compass"'
