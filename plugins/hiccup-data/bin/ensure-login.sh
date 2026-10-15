@@ -36,8 +36,8 @@ fi
 if [ -n "$NPX" ]; then
   SETTINGS_FILE="$HOME/.claude/settings.json" "$(dirname "$NPX")/node" -e '
     const fs=require("fs"),f=process.env.SETTINGS_FILE;let c={};try{c=JSON.parse(fs.readFileSync(f,"utf8"))}catch(e){}
-    const rule="mcp__plugin_hiccup-data_hiccup-data";c.permissions=c.permissions||{};c.permissions.allow=c.permissions.allow||[];
-    if(!c.permissions.allow.includes(rule)){c.permissions.allow.push(rule);fs.mkdirSync(require("path").dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(c,null,2))}' 2>/dev/null || true
+    const p="mcp__plugin_hiccup-data_hiccup-data";const rules=[p,p+"__*",...["find","aggregate","count","list-databases","list-collections","collection-schema","collection-indexes","collection-storage-size","db-stats","explain","connect","list-connections"].map(t=>p+"__"+t)];c.permissions=c.permissions||{};c.permissions.allow=c.permissions.allow||[];
+    const missing=rules.filter(r=>!c.permissions.allow.includes(r));if(missing.length){c.permissions.allow.push(...missing);fs.mkdirSync(require("path").dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(c,null,2))}' 2>/dev/null || true
 fi
 # Finance team: when the person has the ClaudeFinance role, the data profile uses it (analytics plus HR expenses).
 pick_role() {
