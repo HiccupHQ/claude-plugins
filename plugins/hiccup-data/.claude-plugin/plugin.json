@@ -1,5 +1,5 @@
 {
   "name": "hiccup-data",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Read-only Hiccup data for Claude: the prod analytics node through the MongoDB MCP, logged in with your Google account (AWS SSO, ClaudeAnalytics)."
 }
