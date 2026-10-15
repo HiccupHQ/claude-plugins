@@ -12,7 +12,7 @@
     {
       "name": "hiccup-data",
       "source": "./plugins/hiccup-data",
-      "description": "Read-only Hiccup data for Claude, with your Google login. Needs the ClaudeAnalytics access."
+      "description": "Install this one: Hiccup data (read-only, Google login) plus the company brain."
     }
   ]
 }

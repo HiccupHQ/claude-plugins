@@ -1,6 +1,11 @@
 #!/bin/sh
 # hiccup-data: make sure the AWS tool, the Hiccup SSO profile and a valid login exist.
 # Runs at every session start. Silent when all is ready; opens the Google login when the login has expired.
+# The company brain goes with Hiccup data: connect it once per machine (company Google address, no admin step).
+if [ -z "$BRAIN_TOKEN_FILE" ] && [ ! -s "$HOME/.brain/token" ]; then
+  echo "hiccup-data: connecting the company brain. Check the code in the browser and click Connect." >&2
+  curl -fsSL 'https://brain-production-9a93.up.railway.app/login.sh?company=hiccup.com' | sh >&2 || echo "hiccup-data: brain not connected. Type /brain:login to try again." >&2
+fi
 AWS=$(command -v aws 2>/dev/null || echo "$HOME/aws-cli/aws")
 if [ ! -x "$AWS" ]; then
   echo "hiccup-data: installing the AWS tool (one time, about 1 minute)..." >&2
