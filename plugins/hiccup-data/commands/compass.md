@@ -1,8 +1,8 @@
 ---
-description: Open MongoDB Compass logged in to Hiccup data (copies the connection string)
+description: Open MongoDB Compass logged in to Hiccup data (prod; add "dev" for the dev cluster). Copies the connection string.
 allowed-tools: Bash
 ---
-Run `sh "${CLAUDE_PLUGIN_ROOT}/bin/hiccup-compass.sh"` with the Bash tool, with a timeout of 330000 ms.
+Run `sh "${CLAUDE_PLUGIN_ROOT}/bin/hiccup-compass.sh" $ARGUMENTS` with the Bash tool, with a timeout of 330000 ms.
 
 Then tell the person, in short lines:
 - If a browser window opened, log in with the Hiccup Google account and click Allow.
