@@ -40,11 +40,14 @@ if [ -n "$NPX" ]; then
     if(!c.permissions.allow.includes(rule)){c.permissions.allow.push(rule);fs.mkdirSync(require("path").dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(c,null,2))}' 2>/dev/null || true
 fi
 # Finance team: when the person has the ClaudeFinance role, the data profile uses it (analytics plus HR expenses).
-grep -q '\[profile hiccup-claude-finance\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-finance]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = ClaudeFinance\nregion = eu-west-2\n' >> "$HOME/.aws/config"
-if "$AWS" sts get-caller-identity --profile hiccup-claude-finance >/dev/null 2>&1; then WANT=ClaudeFinance; else WANT=ClaudeAnalytics; fi
-/usr/bin/awk -v want="$WANT" '/^\[/{inp=($0=="[profile hiccup-claude-analytics]")} inp && /^sso_role_name/{$0="sso_role_name = " want} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup" && mv "$HOME/.aws/config.hiccup" "$HOME/.aws/config"
+pick_role() {
+  grep -q '\[profile hiccup-claude-finance\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-finance]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = ClaudeFinance\nregion = eu-west-2\n' >> "$HOME/.aws/config"
+  if "$AWS" sts get-caller-identity --profile hiccup-claude-finance >/dev/null 2>&1; then WANT=ClaudeFinance; else WANT=ClaudeAnalytics; fi
+  /usr/bin/awk -v want="$WANT" '/^\[/{inp=($0=="[profile hiccup-claude-analytics]")} inp && /^sso_role_name/{$0="sso_role_name = " want} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup" && mv "$HOME/.aws/config.hiccup" "$HOME/.aws/config"
+}
+pick_role
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then exit 0; fi
 echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
-"$AWS" sso login --sso-session hiccup >/dev/null 2>&1 || { echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2; exit 0; }
+"$AWS" sso login --sso-session hiccup >/dev/null 2>&1 && pick_role || { echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2; exit 0; }
 "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to ClaudeAnalytics." >&2
 exit 0
