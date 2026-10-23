@@ -1,8 +1,8 @@
 {
   "mcpServers": {
     "hiccup-data": {
-      "command": "npx",
-      "args": ["-y", "mongodb-mcp-server@latest"],
+      "command": "sh",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/bin/mongodb-mcp.sh"],
       "env": {
         "AWS_PROFILE": "hiccup-claude-analytics",
         "MDB_MCP_READ_ONLY": "true",

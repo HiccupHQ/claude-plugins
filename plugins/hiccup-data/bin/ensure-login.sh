@@ -21,13 +21,15 @@ mkdir -p "$HOME/.aws"; touch "$HOME/.aws/config"
 grep -q '\[sso-session hiccup\]' "$HOME/.aws/config" || printf '\n[sso-session hiccup]\nsso_start_url = https://d-9c677602a8.awsapps.com/start\nsso_region = eu-west-2\nsso_registration_scopes = sso:account:access\n' >> "$HOME/.aws/config"
 grep -q '\[profile hiccup-claude-analytics\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-analytics]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = ClaudeAnalytics\nregion = eu-west-2\n' >> "$HOME/.aws/config"
 # Claude desktop app (chat): add the same read-only server, so chat can use Hiccup data too.
+# It runs a copy of the launcher in ~/.hiccup-data/bin, because the plugin folder changes with each plugin version.
 NPX=$(command -v npx 2>/dev/null)
 DESK="$HOME/Library/Application Support/Claude"
 if [ -n "$NPX" ] && [ -d "$DESK" ]; then
+  mkdir -p "$HOME/.hiccup-data/bin" && cp "$(dirname "$0")/mongodb-mcp.sh" "$(dirname "$0")/mcp-watchdog.mjs" "$HOME/.hiccup-data/bin/"
   NODE_BIN=$(dirname "$NPX"); export NODE_BIN; DESK_FILE="$DESK/claude_desktop_config.json" "$NODE_BIN/node" -e '
     const fs=require("fs"),f=process.env.DESK_FILE;let c={};try{c=JSON.parse(fs.readFileSync(f,"utf8"))}catch(e){}
     c.mcpServers=c.mcpServers||{};const bin=process.env.NODE_BIN;
-    const want={command:bin+"/npx",args:["-y","mongodb-mcp-server@latest"],env:{PATH:bin+":/usr/bin:/bin",AWS_PROFILE:"hiccup-claude-analytics",MDB_MCP_READ_ONLY:"true",
+    const want={command:"/bin/sh",args:[process.env.HOME+"/.hiccup-data/bin/mongodb-mcp.sh"],env:{PATH:bin+":/usr/bin:/bin",AWS_PROFILE:"hiccup-claude-analytics",MDB_MCP_READ_ONLY:"true",
       MDB_MCP_CONNECTION_STRING:"mongodb+srv://hiccup-prod.clqls.mongodb.net/?authMechanism=MONGODB-AWS&authSource=%24external&readPreference=secondary&readPreferenceTags=nodeType:ANALYTICS"}};
     if(JSON.stringify(c.mcpServers["hiccup-data"])!==JSON.stringify(want)){c.mcpServers["hiccup-data"]=want;fs.writeFileSync(f,JSON.stringify(c,null,2));
       console.error("hiccup-data: added to the Claude desktop app. Quit and reopen the app to use it in chat.")}' 2>&1 >&2 || true
