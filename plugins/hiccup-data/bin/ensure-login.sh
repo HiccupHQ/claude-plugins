@@ -41,7 +41,7 @@ grep -q '\[profile hiccup-claude-analytics\]' "$HOME/.aws/config" || printf '\n[
 /usr/bin/awk '/^\[/{inp=($0=="[profile hiccup-claude-analytics]")} inp && /^sso_role_name/{$0="sso_role_name = ClaudeAnalytics"} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup" \
   && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup" || mv "$HOME/.aws/config.hiccup" "$HOME/.aws/config"; }
 rm -f "$HOME/.aws/config.hiccup"
-if [ -x "$BIN/hx" ]; then
+if [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ]; then
   # Later Bash commands of this session find hx; a person's own hx earlier on PATH comes first.
   # Without an engineer's hiccup-prod profile, hx --env prod reads as ClaudeAnalytics.
   if [ -n "$CLAUDE_ENV_FILE" ]; then
@@ -51,7 +51,7 @@ if [ -x "$BIN/hx" ]; then
   fi
   # A Fortress session gets its own hx text.
   [ -z "$FORTRESS_SESSION_ID" ] && cat <<'CTX'
-Hiccup data: read it with hx, the QueryGateway CLI, in the Bash tool. Pass --env prod for Hiccup's real data (without it hx reads dev). hx only reads; never use mongosh.
+Hiccup data: read it with hx, the QueryGateway CLI, in the Bash tool. Pass --env prod for Hiccup's real data (without it hx reads dev). Use only hx describe, search and aggregate; never use mongosh.
 - `hx --env prod describe` lists the collections and the fields you may read.
 - `hx --env prod search <Collection> <field=value|field:in=a,b|field:after=2026-09-01|field:exists>.. [--fields a,b] [--sort -field] [--limit N] [--count]`
 - `hx --env prod aggregate <Collection> <filters>.. [--by field|field:day|week|month] [--sum|--avg|--min|--max field].. [--unwind array] [--tz Europe/Istanbul] [--sort -count] [--limit N]` counts, sums or groups.
