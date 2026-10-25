@@ -55,7 +55,7 @@ Hiccup data: read it with hx, the QueryGateway CLI, in the Bash tool. Pass --env
 - `hx --env prod describe` lists the collections and the fields you may read.
 - `hx --env prod search <Collection> <field=value|field:in=a,b|field:after=2026-09-01|field:exists>.. [--fields a,b] [--sort -field] [--limit N] [--count]`
 - `hx --env prod aggregate <Collection> <filters>.. [--by field|field:day|week|month] [--sum|--avg|--min|--max field].. [--unwind array] [--tz Europe/Istanbul] [--sort -count] [--limit N]` counts, sums or groups.
-A filter takes any field describe lists; on a collection with a search index one filter must be a search field (describe lists them under filters). A read that is too large is refused and names the count: split a long date range by month and add the answers. Dates are UTC; Hiccup reports days in Europe/Istanbul unless the person says otherwise. Order date field: createdOn; channel: salesChannel; country: country.
+A filter takes any field describe lists; on a collection with a search index one filter must be a search field (describe lists them under filters). hx splits a too-large aggregate by date and adds the parts itself; a search that matches too much is refused and names the count, so narrow its filters. Dates are UTC; Hiccup reports days in Europe/Istanbul unless the person says otherwise. Order date field: createdOn; channel: salesChannel; country: country.
 CTX
 fi
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then exit 0; fi

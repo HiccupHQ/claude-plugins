@@ -7,10 +7,21 @@ const OLD_TOOLS = 'mcp__plugin_hiccup-data_hiccup-data';
 const HX_READS = ['describe', 'search', 'aggregate'];
 const HX_RULES = HX_READS.flatMap(command => ['', '--env dev ', '--env prod '].map(env => `Bash(hx ${env}${command}:*)`));
 
+const isObject = value => typeof value === 'object' && value !== null && !Array.isArray(value);
+
+// value is null for a file that is there but cannot be read, is not UTF-8, does not parse or is not an object.
 function read(path) {
   const text = $.NSString.stringWithContentsOfFileEncodingError(path, $.NSUTF8StringEncoding, null);
-  if (text.isNil()) return { found: false, value: {} };
-  try { return { found: true, value: JSON.parse(text.js) }; } catch (error) { return { found: true, value: null }; }
+  if (text.isNil()) {
+    const found = $.NSFileManager.defaultManager.fileExistsAtPath(path);
+    return { found, value: found ? null : {} };
+  }
+  try {
+    const value = JSON.parse(text.js);
+    return { found: true, value: isObject(value) ? value : null };
+  } catch (error) {
+    return { found: true, value: null };
+  }
 }
 
 function write(path, value) {
@@ -24,7 +35,9 @@ function allowHx(path) {
   const settings = read(path);
   if (settings.value === null) return;
   const permissions = settings.value.permissions = settings.value.permissions || {};
+  if (!isObject(permissions)) return;
   const before = permissions.allow || [];
+  if (!Array.isArray(before) || !before.every(rule => typeof rule === 'string')) return;
   const kept = before.filter(rule => !rule.startsWith(OLD_TOOLS));
   const after = kept.concat(HX_RULES.filter(rule => !kept.includes(rule)));
   if (JSON.stringify(after) === JSON.stringify(before)) return;
@@ -34,7 +47,7 @@ function allowHx(path) {
 
 function removeDesktopServer(path) {
   const config = read(path);
-  if (!config.found || config.value === null || !config.value.mcpServers || !config.value.mcpServers['hiccup-data']) return;
+  if (!config.found || config.value === null || !isObject(config.value.mcpServers) || !config.value.mcpServers['hiccup-data']) return;
   delete config.value.mcpServers['hiccup-data'];
   write(path, config.value);
   console.log('hiccup-data: removed the old data server from the Claude desktop app. Use Claude Code for Hiccup data.');
