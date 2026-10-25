@@ -14,6 +14,8 @@ function read(path) {
 }
 
 function write(path, value) {
+  // A settings file linked from a dotfiles folder stays a link: the write goes to the file it points at.
+  path = $(path).stringByResolvingSymlinksInPath.js;
   $.NSFileManager.defaultManager.createDirectoryAtPathWithIntermediateDirectoriesAttributesError($(path).stringByDeletingLastPathComponent, true, $(), null);
   $(JSON.stringify(value, null, 2)).writeToFileAtomicallyEncodingError(path, true, $.NSUTF8StringEncoding, null);
 }

@@ -12,9 +12,12 @@ BIN="$HOME/.hiccup-data/bin"
 HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-13513f7/hx-aarch64-apple-darwin
 HX_SHA=b7b4c61305a283459111ef90544794e558d76dc6ee3207fd5e01afec97c7ea4d
 sha_of() { /usr/bin/shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
-if [ "$(uname -sm)" = "Darwin arm64" ] && [ "$(sha_of "$BIN/hx")" != "$HX_SHA" ]; then
+# Apple silicon only; hw.optional.arm64 is 1 there in a Rosetta shell too.
+if [ "$(uname -s)" != Darwin ] || [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" != 1 ]; then
+  echo "hiccup-data: hx runs only on Apple silicon Macs, so this machine reads no Hiccup data. Ask Ronny." >&2
+elif [ "$(sha_of "$BIN/hx")" != "$HX_SHA" ]; then
   mkdir -p "$BIN"
-  if curl -fsSL "$HX_URL" -o "$BIN/hx.$$" && [ "$(sha_of "$BIN/hx.$$")" = "$HX_SHA" ]; then
+  if curl -fsSL --connect-timeout 10 --max-time 120 "$HX_URL" -o "$BIN/hx.$$" && [ "$(sha_of "$BIN/hx.$$")" = "$HX_SHA" ]; then
     chmod +x "$BIN/hx.$$" && mv -f "$BIN/hx.$$" "$BIN/hx"
   else
     rm -f "$BIN/hx.$$"; echo "hiccup-data: could not install hx. Type /hiccup-data:login to try again." >&2
