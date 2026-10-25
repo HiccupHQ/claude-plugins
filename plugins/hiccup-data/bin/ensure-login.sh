@@ -37,17 +37,36 @@ fi
 mkdir -p "$HOME/.aws"; touch "$HOME/.aws/config"
 grep -q '\[sso-session hiccup\]' "$HOME/.aws/config" || printf '\n[sso-session hiccup]\nsso_start_url = https://d-9c677602a8.awsapps.com/start\nsso_region = eu-west-2\nsso_registration_scopes = sso:account:access\n' >> "$HOME/.aws/config"
 grep -q '\[profile hiccup-claude-analytics\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-analytics]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = ClaudeAnalytics\nregion = eu-west-2\n' >> "$HOME/.aws/config"
-# The QueryGateway knows the ClaudeAnalytics role, not ClaudeFinance; 0.12.0 put ClaudeFinance on this profile for the finance team.
+grep -q '\[profile hiccup-claude-finance\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-finance]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = ClaudeFinance\nregion = eu-west-2\n' >> "$HOME/.aws/config"
+# hiccup-claude-analytics stays ClaudeAnalytics; 0.12.0 put ClaudeFinance on it for the finance team.
 /usr/bin/awk '/^\[/{inp=($0=="[profile hiccup-claude-analytics]")} inp && /^sso_role_name/{$0="sso_role_name = ClaudeAnalytics"} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup" \
   && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup" || mv "$HOME/.aws/config.hiccup" "$HOME/.aws/config"; }
 rm -f "$HOME/.aws/config.hiccup"
+# The profile hx reads prod with: ClaudeFinance (analytics and HR expenses) for the finance team, else ClaudeAnalytics.
+# Chosen after each login and kept in ~/.hiccup-data/reader, so a session start asks AWS once, not twice.
+READER="$HOME/.hiccup-data/reader"
+pick_reader() {
+  mkdir -p "$HOME/.hiccup-data"
+  if "$AWS" sts get-caller-identity --profile hiccup-claude-finance >/dev/null 2>&1; then echo hiccup-claude-finance; else echo hiccup-claude-analytics; fi > "$READER"
+}
+if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then
+  [ -s "$READER" ] || pick_reader
+else
+  echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
+  if "$AWS" sso login --sso-session hiccup >/dev/null 2>&1; then
+    pick_reader
+    "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to ClaudeAnalytics." >&2
+  else
+    echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2
+  fi
+fi
 if [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ]; then
   # Later Bash commands of this session find hx; a person's own hx earlier on PATH comes first.
-  # Without an engineer's hiccup-prod profile, hx --env prod reads as ClaudeAnalytics.
+  # Without an engineer's hiccup-prod profile, hx --env prod reads with the profile picked above.
   if [ -n "$CLAUDE_ENV_FILE" ]; then
     echo "export PATH=\"\$PATH:$BIN\"" >> "$CLAUDE_ENV_FILE"
     [ -z "$HICCUP_PROD_AWS_PROFILE" ] && ! grep -q '^\[profile hiccup-prod\]' "$HOME/.aws/config" \
-      && echo "export HICCUP_PROD_AWS_PROFILE=hiccup-claude-analytics" >> "$CLAUDE_ENV_FILE"
+      && echo "export HICCUP_PROD_AWS_PROFILE=$(cat "$READER" 2>/dev/null || echo hiccup-claude-analytics)" >> "$CLAUDE_ENV_FILE"
   fi
   # A Fortress session gets its own hx text.
   [ -z "$FORTRESS_SESSION_ID" ] && cat <<'CTX'
@@ -58,8 +77,4 @@ Hiccup data: read it with hx, the QueryGateway CLI, in the Bash tool. Pass --env
 A filter takes any field describe lists; on a collection with a search index one filter must be a search field (describe lists them under filters). hx splits a too-large aggregate by date and adds the parts itself; a search that matches too much is refused and names the count, so narrow its filters. Dates are UTC; Hiccup reports days in Europe/Istanbul unless the person says otherwise. Order date field: createdOn; channel: salesChannel; country: country.
 CTX
 fi
-if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then exit 0; fi
-echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
-"$AWS" sso login --sso-session hiccup >/dev/null 2>&1 || { echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2; exit 0; }
-"$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to ClaudeAnalytics." >&2
 exit 0
