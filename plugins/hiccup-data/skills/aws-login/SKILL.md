@@ -12,6 +12,7 @@ description: Renew the Hiccup AWS login (AWS SSO, Google account) for every Hicc
 - One login covers every Hiccup account and role: IAM Identity Center, start URL `https://d-9c677602a8.awsapps.com/start`, signed in with the person's Hiccup Google account.
 - `~/.aws/config` has `[sso-session hiccup]`. The profiles a person can use depend on the roles they are given:
   - `hiccup-claude-analytics`: read-only prod data (everyone with Hiccup data). hiccup-data writes it at session start.
+  - `hiccup-claude-finance`: the same, and HR expenses (the finance team, ClaudeFinance). hx reads with it when the person has that role.
   - `hiccup-dev` and `hiccup-prod`: engineers (AdministratorAccess on dev 186923665223 and prod 310852620549).
   - `hiccup-mongo-admin`: prod Mongo read/write (MongoProdAdmin).
 - `hiccup-dev` and `hiccup-prod` may read `hiccup-dev-sso` / `hiccup-prod-sso` through `credential_process = aws configure export-credentials …`. Keep that shape: the Kotlin AWS SDK in hiccup-backend has no SSO module and cannot read an SSO profile directly.
