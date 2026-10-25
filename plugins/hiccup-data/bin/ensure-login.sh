@@ -47,27 +47,32 @@ rm -f "$HOME/.aws/config.hiccup"
 READER="$HOME/.hiccup-data/reader"
 pick_reader() {
   mkdir -p "$HOME/.hiccup-data"
-  if "$AWS" sts get-caller-identity --profile hiccup-claude-finance >/dev/null 2>&1; then echo hiccup-claude-finance; else echo hiccup-claude-analytics; fi > "$READER"
+  if "$AWS" sts get-caller-identity --profile hiccup-claude-finance >/dev/null 2>&1; then echo hiccup-claude-finance; else echo hiccup-claude-analytics; fi > "$READER.$$" \
+    && mv -f "$READER.$$" "$READER"
 }
+HX_OK=no; [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ] && HX_OK=yes
+# Later Bash commands of this session find hx; a person's own hx earlier on PATH comes first.
+# Without an engineer's hiccup-prod profile, hx --env prod reads with the picked profile. The PATH and the
+# profile known so far go out before the login, which can wait for the browser; a later export wins.
+export_profile() {
+  [ "$HX_OK" = yes ] && [ -n "$CLAUDE_ENV_FILE" ] && [ -z "$HICCUP_PROD_AWS_PROFILE" ] && ! grep -q '^\[profile hiccup-prod\]' "$HOME/.aws/config" || return 0
+  PROFILE=hiccup-claude-analytics; [ -s "$READER" ] && PROFILE=$(cat "$READER")
+  echo "export HICCUP_PROD_AWS_PROFILE=$PROFILE" >> "$CLAUDE_ENV_FILE"
+}
+[ "$HX_OK" = yes ] && [ -n "$CLAUDE_ENV_FILE" ] && echo "export PATH=\"\$PATH:$BIN\"" >> "$CLAUDE_ENV_FILE"
+export_profile
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then
-  [ -s "$READER" ] || pick_reader
+  [ -s "$READER" ] || { pick_reader && export_profile; }
 else
   echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
   if "$AWS" sso login --sso-session hiccup >/dev/null 2>&1; then
-    pick_reader
+    pick_reader && export_profile
     "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to ClaudeAnalytics." >&2
   else
     echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2
   fi
 fi
-if [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ]; then
-  # Later Bash commands of this session find hx; a person's own hx earlier on PATH comes first.
-  # Without an engineer's hiccup-prod profile, hx --env prod reads with the profile picked above.
-  if [ -n "$CLAUDE_ENV_FILE" ]; then
-    echo "export PATH=\"\$PATH:$BIN\"" >> "$CLAUDE_ENV_FILE"
-    [ -z "$HICCUP_PROD_AWS_PROFILE" ] && ! grep -q '^\[profile hiccup-prod\]' "$HOME/.aws/config" \
-      && echo "export HICCUP_PROD_AWS_PROFILE=$(cat "$READER" 2>/dev/null || echo hiccup-claude-analytics)" >> "$CLAUDE_ENV_FILE"
-  fi
+if [ "$HX_OK" = yes ]; then
   # A Fortress session gets its own hx text.
   [ -z "$FORTRESS_SESSION_ID" ] && cat <<'CTX'
 Hiccup data: read it with hx, the QueryGateway CLI, in the Bash tool. Pass --env prod for Hiccup's real data (without it hx reads dev). Use only hx describe, search and aggregate; never use mongosh.
