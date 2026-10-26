@@ -69,6 +69,18 @@ export_profile
 if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1; then
   [ -s "$READER" ] || { pick_reader && export_profile; }
 else
+  # One login at a time: sessions that start together would each open a browser tab. The first takes the lock; the others wait for its login.
+  LOCK="$HOME/.hiccup-data/login.lock"
+  mkdir -p "$HOME/.hiccup-data"
+  find "$LOCK" -maxdepth 0 -mmin +5 -exec rmdir {} \; 2>/dev/null
+  if ! mkdir "$LOCK" 2>/dev/null; then
+    WAITED=0
+    while [ -d "$LOCK" ] && [ "$WAITED" -lt 300 ]; do sleep 2; WAITED=$((WAITED + 2)); done
+    [ -s "$READER" ] || pick_reader
+    export_profile
+    exit 0
+  fi
+  trap 'rmdir "$LOCK" 2>/dev/null' EXIT
   echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
   if "$AWS" sso login --sso-session hiccup >/dev/null 2>&1; then
     pick_reader && export_profile
