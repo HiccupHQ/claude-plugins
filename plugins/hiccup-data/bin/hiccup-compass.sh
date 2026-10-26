@@ -12,9 +12,9 @@ alert() { echo "$1"; osascript -e "display alert \"Hiccup Compass\" message \"$1
 add_profile hiccup-claude-analytics "$PROD_ACCOUNT" AnalyticsRead
 # The data profiles were ClaudeAnalytics and ClaudeFinance before 2026-10-26: they read with AnalyticsRead and FinanceRead now.
 /usr/bin/awk '/^\[/{set=""; if ($0=="[profile hiccup-claude-analytics]") set="AnalyticsRead"; if ($0=="[profile hiccup-claude-finance]") set="FinanceRead"}
-  set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup" \
-  && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup" || mv "$HOME/.aws/config.hiccup" "$HOME/.aws/config"; }
-rm -f "$HOME/.aws/config.hiccup"
+  set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup.$$" \
+  && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup.$$" || mv "$HOME/.aws/config.hiccup.$$" "$HOME/.aws/config"; }
+rm -f "$HOME/.aws/config.hiccup.$$"
 "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || "$AWS" sso login --sso-session hiccup >/dev/null 2>&1
 HOST=hiccup-prod.clqls.mongodb.net
 if [ "$1" = dev ]; then

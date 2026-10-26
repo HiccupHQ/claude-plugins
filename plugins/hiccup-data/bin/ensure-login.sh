@@ -41,9 +41,9 @@ grep -q '\[profile hiccup-claude-finance\]' "$HOME/.aws/config" || printf '\n[pr
 # The two data profiles keep their names and read with the sets AnalyticsRead and FinanceRead (ClaudeAnalytics and
 # ClaudeFinance before 2026-10-26; 0.12.0 put ClaudeFinance on hiccup-claude-analytics for the finance team).
 /usr/bin/awk '/^\[/{set=""; if ($0=="[profile hiccup-claude-analytics]") set="AnalyticsRead"; if ($0=="[profile hiccup-claude-finance]") set="FinanceRead"}
-  set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup" \
-  && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup" || mv "$HOME/.aws/config.hiccup" "$HOME/.aws/config"; }
-rm -f "$HOME/.aws/config.hiccup"
+  set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup.$$" \
+  && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup.$$" || mv "$HOME/.aws/config.hiccup.$$" "$HOME/.aws/config"; }
+rm -f "$HOME/.aws/config.hiccup.$$"
 # The profile hx reads prod with: FinanceRead (analytics and HR expenses) for the finance team, else AnalyticsRead.
 # Chosen after each login and kept in ~/.hiccup-data/reader, so a session start asks AWS once, not twice.
 READER="$HOME/.hiccup-data/reader"
