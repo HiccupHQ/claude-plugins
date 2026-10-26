@@ -36,20 +36,23 @@ if [ ! -x "$AWS" ]; then
 fi
 mkdir -p "$HOME/.aws"; touch "$HOME/.aws/config"
 grep -q '\[sso-session hiccup\]' "$HOME/.aws/config" || printf '\n[sso-session hiccup]\nsso_start_url = https://d-9c677602a8.awsapps.com/start\nsso_region = eu-west-2\nsso_registration_scopes = sso:account:access\n' >> "$HOME/.aws/config"
-grep -q '\[profile hiccup-claude-analytics\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-analytics]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = AnalyticsRead\nregion = eu-west-2\n' >> "$HOME/.aws/config"
-grep -q '\[profile hiccup-claude-finance\]' "$HOME/.aws/config" || printf '\n[profile hiccup-claude-finance]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = FinanceRead\nregion = eu-west-2\n' >> "$HOME/.aws/config"
-# The two data profiles keep their names and read with the sets AnalyticsRead and FinanceRead (ClaudeAnalytics and
+# The data profiles are named after their sets. The old names hiccup-claude-analytics and hiccup-claude-finance are
+# not used: a Claude process started before 0.14.0 sets them back to the retired ClaudeAnalytics at each session start.
+grep -q '\[profile hiccup-analytics-read\]' "$HOME/.aws/config" || printf '\n[profile hiccup-analytics-read]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = AnalyticsRead\nregion = eu-west-2\n' >> "$HOME/.aws/config"
+grep -q '\[profile hiccup-finance-read\]' "$HOME/.aws/config" || printf '\n[profile hiccup-finance-read]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = FinanceRead\nregion = eu-west-2\n' >> "$HOME/.aws/config"
+# The old profiles still point at the new sets, for a person who names them by hand (ClaudeAnalytics and
 # ClaudeFinance before 2026-10-26; 0.12.0 put ClaudeFinance on hiccup-claude-analytics for the finance team).
 /usr/bin/awk '/^\[/{set=""; if ($0=="[profile hiccup-claude-analytics]") set="AnalyticsRead"; if ($0=="[profile hiccup-claude-finance]") set="FinanceRead"}
   set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup.$$" \
   && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup.$$" || mv "$HOME/.aws/config.hiccup.$$" "$HOME/.aws/config"; }
 rm -f "$HOME/.aws/config.hiccup.$$"
 # The profile hx reads prod with: FinanceRead (analytics and HR expenses) for the finance team, else AnalyticsRead.
-# Chosen after each login and kept in ~/.hiccup-data/reader, so a session start asks AWS once, not twice.
-READER="$HOME/.hiccup-data/reader"
+# Chosen after each login and kept in ~/.hiccup-data/read-profile, so a session start asks AWS once, not twice
+# (~/.hiccup-data/reader is the old file, which a process started before 0.14.0 still writes).
+READER="$HOME/.hiccup-data/read-profile"
 pick_reader() {
   mkdir -p "$HOME/.hiccup-data"
-  if "$AWS" sts get-caller-identity --profile hiccup-claude-finance >/dev/null 2>&1; then echo hiccup-claude-finance; else echo hiccup-claude-analytics; fi > "$READER.$$" \
+  if "$AWS" sts get-caller-identity --profile hiccup-finance-read >/dev/null 2>&1; then echo hiccup-finance-read; else echo hiccup-analytics-read; fi > "$READER.$$" \
     && mv -f "$READER.$$" "$READER"
 }
 HX_OK=no; [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ] && HX_OK=yes
@@ -58,18 +61,18 @@ HX_OK=no; [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ] && HX_OK=yes
 # profile known so far go out before the login, which can wait for the browser; a later export wins.
 export_profile() {
   [ "$HX_OK" = yes ] && [ -n "$CLAUDE_ENV_FILE" ] && [ -z "$HICCUP_PROD_AWS_PROFILE" ] && ! grep -q '^\[profile hiccup-prod\]' "$HOME/.aws/config" || return 0
-  PROFILE=hiccup-claude-analytics; [ -s "$READER" ] && PROFILE=$(cat "$READER")
+  PROFILE=hiccup-analytics-read; [ -s "$READER" ] && PROFILE=$(cat "$READER")
   echo "export HICCUP_PROD_AWS_PROFILE=$PROFILE" >> "$CLAUDE_ENV_FILE"
 }
 [ "$HX_OK" = yes ] && [ -n "$CLAUDE_ENV_FILE" ] && echo "export PATH=\"\$PATH:$BIN\"" >> "$CLAUDE_ENV_FILE"
 export_profile
-if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1; then
+if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1; then
   [ -s "$READER" ] || { pick_reader && export_profile; }
 else
   echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
   if "$AWS" sso login --sso-session hiccup >/dev/null 2>&1; then
     pick_reader && export_profile
-    "$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to AnalyticsRead." >&2
+    "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to AnalyticsRead." >&2
   else
     echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2
   fi

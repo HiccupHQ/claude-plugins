@@ -11,13 +11,9 @@ PROD_ACCOUNT=310852620549
 DEV_ACCOUNT=186923665223
 add_profile() { grep -q "\[profile $1\]" "$HOME/.aws/config" 2>/dev/null || printf '\n[profile %s]\nsso_session = hiccup\nsso_account_id = %s\nsso_role_name = %s\nregion = eu-west-2\n' "$1" "$2" "$3" >> "$HOME/.aws/config"; }
 alert() { echo "$1"; osascript -e "display alert \"Hiccup Compass\" message \"$1\"" >/dev/null 2>&1; }
-add_profile hiccup-claude-analytics "$PROD_ACCOUNT" AnalyticsRead
-# The data profiles were ClaudeAnalytics and ClaudeFinance before 2026-10-26: they read with AnalyticsRead and FinanceRead now.
-/usr/bin/awk '/^\[/{set=""; if ($0=="[profile hiccup-claude-analytics]") set="AnalyticsRead"; if ($0=="[profile hiccup-claude-finance]") set="FinanceRead"}
-  set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup.$$" \
-  && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup.$$" || mv "$HOME/.aws/config.hiccup.$$" "$HOME/.aws/config"; }
-rm -f "$HOME/.aws/config.hiccup.$$"
-"$AWS" sts get-caller-identity --profile hiccup-claude-analytics >/dev/null 2>&1 || "$AWS" sso login --sso-session hiccup >/dev/null 2>&1
+# The read profiles are named after their sets (ensure-login.sh says why not hiccup-claude-analytics).
+add_profile hiccup-analytics-read "$PROD_ACCOUNT" AnalyticsRead
+"$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1 || "$AWS" sso login --sso-session hiccup >/dev/null 2>&1
 # The roles this person holds in an account, read with the SSO login (its cache file is the SHA-1 of the session name).
 TOKEN=$(/usr/bin/plutil -extract accessToken raw -o - "$HOME/.aws/sso/cache/$(printf hiccup | /usr/bin/shasum | cut -c1-40).json" 2>/dev/null)
 account_roles() { echo " $("$AWS" sso list-account-roles --access-token "$TOKEN" --account-id "$1" --region eu-west-2 \
@@ -52,8 +48,8 @@ else
     AdministratorAccess) PROFILE=hiccup-prod-data ;;
     Developer) PROFILE=hiccup-prod-developer ;;
     MongoWrite*) PROFILE=hiccup-mongo-write-$(printf '%s' "${ROLE#MongoWrite}" | tr '[:upper:]' '[:lower:]') ;;
-    FinanceRead) PROFILE=hiccup-claude-finance ;;
-    *) PROFILE=hiccup-claude-analytics ;;
+    FinanceRead) PROFILE=hiccup-finance-read ;;
+    *) PROFILE=hiccup-analytics-read ;;
   esac
   add_profile "$PROFILE" "$PROD_ACCOUNT" "$ROLE"
 fi
