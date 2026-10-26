@@ -5,7 +5,7 @@ allowed-tools: Bash
 Run `sh "${CLAUDE_PLUGIN_ROOT}/bin/hiccup-compass.sh" $ARGUMENTS` with the Bash tool, with a timeout of 330000 ms.
 
 Then tell the person, in short lines:
-- The role on the "Compass role:" line. AdministratorAccess and MongoWrite<Scope> can write; FinanceRead and AnalyticsRead read only. If a "Write roles you hold:" line lists more than one, say that `/hiccup-data:compass <scope>` (catalog, orders, supply, ops, storefront, finance, reports, hr, cms) picks one.
+- The role on the "Compass role:" line. AdministratorAccess, Developer, DeveloperDev and MongoWrite<Scope> can write (Developer and DeveloperDev never hiccup-hr); FinanceRead and AnalyticsRead read only. If a "Write roles you hold:" line lists more than one, say that `/hiccup-data:compass <scope>` (catalog, orders, supply, ops, storefront, finance, reports, hr, cms) picks one.
 - If an alert says they have no write access for a scope, they ask Ronny for a grant of that MongoWrite set.
 - If a browser window opened, log in with the Hiccup Google account and click Allow.
 - In Compass: New connection, paste (the connection string is on the clipboard), Connect. The pasted string works until the login ends (about 8 hours); then type /hiccup-data:compass again. Do not save or share it: it holds a temporary key.
