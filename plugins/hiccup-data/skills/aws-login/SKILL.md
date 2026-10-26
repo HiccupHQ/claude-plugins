@@ -14,7 +14,8 @@ description: Renew the Hiccup AWS login (AWS SSO, Google account) for every Hicc
   - `hiccup-claude-analytics`: read-only prod data (everyone with Hiccup data). hiccup-data writes it at session start.
   - `hiccup-claude-finance`: the same, and HR expenses (the finance team, ClaudeFinance). hx reads with it when the person has that role.
   - `hiccup-dev` and `hiccup-prod`: engineers (AdministratorAccess on dev 186923665223 and prod 310852620549).
-  - `hiccup-mongo-admin`: prod Mongo read/write (MongoProdAdmin).
+  - `hiccup-mongo-admin`: prod Mongo read/write on everything (AdministratorAccess on prod; MongoProdAdmin was retired on 2026-10-26).
+  - `hiccup-mongo-write-<scope>` (catalog, orders, supply, ops, storefront, finance, reports, hr, cms): Compass read/write on that scope's collections for a period (a MongoWrite<Scope> grant line in hiccup-backend `framework/sso-access/grants.json`). /hiccup-data:compass writes these.
 - `hiccup-dev` and `hiccup-prod` may read `hiccup-dev-sso` / `hiccup-prod-sso` through `credential_process = aws configure export-credentials …`. Keep that shape: the Kotlin AWS SDK in hiccup-backend has no SSO module and cannot read an SSO profile directly.
 - Role credentials last 1 hour and renew by themselves while the SSO login is valid (about 8 hours).
 
