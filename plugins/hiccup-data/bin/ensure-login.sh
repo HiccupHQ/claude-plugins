@@ -48,7 +48,7 @@ grep -q '\[profile hiccup-finance-read\]' "$HOME/.aws/config" || printf '\n[prof
 rm -f "$HOME/.aws/config.hiccup.$$"
 # The profile hx reads prod with: FinanceRead (analytics and HR expenses) for the finance team, else AnalyticsRead.
 # Chosen after each login and kept in ~/.hiccup-data/read-profile, so a session start asks AWS once, not twice
-# (~/.hiccup-data/reader is the old file, which a process started before 0.14.0 still writes).
+# (~/.hiccup-data/reader is the old file, which a process started on 0.14.1 or older still writes).
 READER="$HOME/.hiccup-data/read-profile"
 pick_reader() {
   mkdir -p "$HOME/.hiccup-data"
