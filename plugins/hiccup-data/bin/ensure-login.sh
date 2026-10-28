@@ -38,6 +38,8 @@ mkdir -p "$HOME/.aws"; touch "$HOME/.aws/config"
 grep -q '\[sso-session hiccup\]' "$HOME/.aws/config" || printf '\n[sso-session hiccup]\nsso_start_url = https://d-9c677602a8.awsapps.com/start\nsso_region = eu-west-2\nsso_registration_scopes = sso:account:access\n' >> "$HOME/.aws/config"
 # The data profiles are named after their sets. The old names hiccup-claude-analytics and hiccup-claude-finance are
 # not used: a Claude process started before 0.14.0 sets them back to the retired ClaudeAnalytics at each session start.
+# Analytics is the team set that replaces AnalyticsRead (2026-10-28); both stay until every holder has moved.
+grep -q '\[profile hiccup-analytics\]' "$HOME/.aws/config" || printf '\n[profile hiccup-analytics]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = Analytics\nregion = eu-west-2\n' >> "$HOME/.aws/config"
 grep -q '\[profile hiccup-analytics-read\]' "$HOME/.aws/config" || printf '\n[profile hiccup-analytics-read]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = AnalyticsRead\nregion = eu-west-2\n' >> "$HOME/.aws/config"
 grep -q '\[profile hiccup-finance-read\]' "$HOME/.aws/config" || printf '\n[profile hiccup-finance-read]\nsso_session = hiccup\nsso_account_id = 310852620549\nsso_role_name = FinanceRead\nregion = eu-west-2\n' >> "$HOME/.aws/config"
 # The old profiles still point at the new sets, for a person who names them by hand (ClaudeAnalytics and
@@ -46,14 +48,22 @@ grep -q '\[profile hiccup-finance-read\]' "$HOME/.aws/config" || printf '\n[prof
   set!="" && /^sso_role_name/{$0="sso_role_name = " set} {print}' "$HOME/.aws/config" > "$HOME/.aws/config.hiccup.$$" \
   && { cmp -s "$HOME/.aws/config" "$HOME/.aws/config.hiccup.$$" || mv "$HOME/.aws/config.hiccup.$$" "$HOME/.aws/config"; }
 rm -f "$HOME/.aws/config.hiccup.$$"
-# The profile hx reads prod with: FinanceRead (analytics and HR expenses) for the finance team, else AnalyticsRead.
-# Chosen after each login and kept in ~/.hiccup-data/read-profile, so a session start asks AWS once, not twice
-# (~/.hiccup-data/reader is the old file, which a process started on 0.14.1 or older still writes).
-READER="$HOME/.hiccup-data/read-profile"
+# The profile hx reads prod with: FinanceRead (analytics and HR expenses) for the finance team, else Analytics, else
+# AnalyticsRead. Chosen after each login and kept in ~/.hiccup-data/read-set, so a session start asks AWS once, not
+# twice. read-profile (0.16.3 and older, before Analytics) and reader (0.14.1 and older) are the old files, which a
+# process started on those versions still writes; the new name makes each machine choose again once.
+READER="$HOME/.hiccup-data/read-set"
 pick_reader() {
   mkdir -p "$HOME/.hiccup-data"
-  if "$AWS" sts get-caller-identity --profile hiccup-finance-read >/dev/null 2>&1; then echo hiccup-finance-read; else echo hiccup-analytics-read; fi > "$READER.$$" \
+  if "$AWS" sts get-caller-identity --profile hiccup-finance-read >/dev/null 2>&1; then echo hiccup-finance-read
+  elif "$AWS" sts get-caller-identity --profile hiccup-analytics >/dev/null 2>&1; then echo hiccup-analytics
+  else echo hiccup-analytics-read; fi > "$READER.$$" \
     && mv -f "$READER.$$" "$READER"
+}
+# Whether the login works with a read set, the new one first.
+logged_in() {
+  "$AWS" sts get-caller-identity --profile hiccup-analytics >/dev/null 2>&1 \
+    || "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1
 }
 HX_OK=no; [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ] && HX_OK=yes
 # Later Bash commands of this session find hx; a person's own hx earlier on PATH comes first.
@@ -66,7 +76,7 @@ export_profile() {
 }
 [ "$HX_OK" = yes ] && [ -n "$CLAUDE_ENV_FILE" ] && echo "export PATH=\"\$PATH:$BIN\"" >> "$CLAUDE_ENV_FILE"
 export_profile
-if [ "$1" != "--force" ] && "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1; then
+if [ "$1" != "--force" ] && logged_in; then
   [ -s "$READER" ] || { pick_reader && export_profile; }
 else
   # One login at a time: sessions that start together would each open a browser tab. The first takes the lock; the others wait for its login.
@@ -84,7 +94,7 @@ else
   echo "hiccup-data: log in with your Hiccup Google account in the browser window, then click Allow." >&2
   if "$AWS" sso login --sso-session hiccup >/dev/null 2>&1; then
     pick_reader && export_profile
-    "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1 || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to AnalyticsRead." >&2
+    logged_in || echo "hiccup-data: you are logged in, but you do not have Hiccup data access. Ask Ronny to add you to Analytics." >&2
   else
     echo "hiccup-data: login did not finish. Type /hiccup-data:login to try again." >&2
   fi
