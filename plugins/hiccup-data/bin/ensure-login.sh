@@ -9,8 +9,8 @@ fi
 # hx: a pinned build (HiccupHQ/claude-plugins release hx-89fd1e3), used only when its SHA-256 is the one below.
 # It lives in ~/.hiccup-data/bin, because the plugin folder changes with each plugin version.
 BIN="$HOME/.hiccup-data/bin"
-HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-89fd1e3/hx-aarch64-apple-darwin
-HX_SHA=6cb6113a6c182f797e683c19b88f5842f7702d5582d8f17144adce1dbdd2eea1
+HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-54ff383/hx-aarch64-apple-darwin
+HX_SHA=ff2d4ecbd26d4c5643a4d667d7bde819815d011a1d5e4b505a6395a20f6f3e4e
 sha_of() { /usr/bin/shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
 # Apple silicon only; hw.optional.arm64 is 1 there in a Rosetta shell too.
 if [ "$(uname -s)" != Darwin ] || [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" != 1 ]; then
