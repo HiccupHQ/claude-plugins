@@ -1,10 +1,10 @@
-// hiccup-data: allows the read-only hx commands in Claude Code and removes what the Mongo MCP server left (0.12.0 and older).
+// hiccup-data: allows the read-only hx commands (check reads a status and writes nothing) in Claude Code and removes what the Mongo MCP server left (0.12.0 and older).
 // JavaScript for Automation (osascript -l JavaScript), because every Mac has it and not every Mac has node.
 // Argument: the home folder. A file that does not parse is left as it is.
 ObjC.import('Foundation');
 
 const OLD_TOOLS = 'mcp__plugin_hiccup-data_hiccup-data';
-const HX_READS = ['describe', 'search', 'aggregate'];
+const HX_READS = ['describe', 'search', 'aggregate', 'check'];
 const HX_RULES = HX_READS.flatMap(command => ['', '--env dev ', '--env prod '].map(env => `Bash(hx ${env}${command}:*)`));
 
 const isObject = value => typeof value === 'object' && value !== null && !Array.isArray(value);
