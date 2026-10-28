@@ -11,10 +11,10 @@ description: Renew the Hiccup AWS login (AWS SSO, Google account) for every Hicc
 
 - One login covers every Hiccup account and role: IAM Identity Center, start URL `https://d-9c677602a8.awsapps.com/start`, signed in with the person's Hiccup Google account.
 - `~/.aws/config` has `[sso-session hiccup]`. The profiles a person can use depend on the roles they are given:
-  - `hiccup-analytics`, `hiccup-analytics-read`: read-only prod data (everyone with Hiccup data: Analytics, the team set that replaces AnalyticsRead, and AnalyticsRead until it goes). hiccup-data writes both at session start and reads with the first one the person holds. The old `hiccup-claude-analytics` is not used: a Claude process started before 0.14.0 sets it back to a retired role.
+  - `hiccup-analytics-read`: read-only prod data (everyone with Hiccup data, AnalyticsRead). hiccup-data writes it at session start. The old `hiccup-claude-analytics` is not used: a Claude process started before 0.14.0 sets it back to a retired role.
   - `hiccup-finance-read`: the same, and HR expenses (the finance team, FinanceRead). hx reads with it when the person has that role.
-  - `hiccup-dev` and `hiccup-prod`: engineers (Admin, else AdministratorAccess, on dev 186923665223 and prod 310852620549).
-  - `hiccup-prod-admin`, `hiccup-dev-admin`: Mongo read/write on every database for Compass (Admin). `hiccup-prod-data`, `hiccup-dev-data`: the same with AdministratorAccess.
+  - `hiccup-dev` and `hiccup-prod`: engineers (AdministratorAccess on dev 186923665223 and prod 310852620549).
+  - `hiccup-prod-data`: prod Mongo read/write on every database for Compass (AdministratorAccess).
   - `hiccup-prod-developer`, `hiccup-dev-developer`: Mongo read/write on the business domains and hiccup-cms for Compass, never hiccup-hr (Developer on prod, DeveloperDev on dev).
   - `hiccup-mongo-write-<scope>`: prod Mongo read/write on one domain for Compass (MongoWrite<Scope>, a grant with an end date). MongoProdAdmin is retired: `hiccup-mongo-admin` no longer works.
 - `hiccup-dev` and `hiccup-prod` may read `hiccup-dev-sso` / `hiccup-prod-sso` through `credential_process = aws configure export-credentials …`. Keep that shape: the Kotlin AWS SDK in hiccup-backend has no SSO module and cannot read an SSO profile directly.
@@ -29,7 +29,7 @@ AWS=$(command -v aws || echo "$HOME/aws-cli/aws")
 grep -oE '^\[profile hiccup-[a-z-]+\]' ~/.aws/config | sed 's/\[profile //;s/\]//'
 ```
 
-2. Check each of `hiccup-analytics` (else `hiccup-analytics-read`), `hiccup-dev`, `hiccup-prod` that exists. If every one works, say so and stop:
+2. Check each of `hiccup-analytics-read`, `hiccup-dev`, `hiccup-prod` that exists. If every one works, say so and stop:
 
 ```bash
 "$AWS" --profile hiccup-dev sts get-caller-identity --query Account --output text

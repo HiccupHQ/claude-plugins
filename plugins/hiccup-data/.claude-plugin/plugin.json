@@ -1,7 +1,7 @@
 {
   "name": "hiccup-data",
-  "version": "0.17.0",
-  "description": "Hiccup data and the company brain in one install: read-only prod data through hx, the QueryGateway CLI, with your Google login (AWS SSO: Analytics or AnalyticsRead, or FinanceRead for the finance team), and the brain connected on first start.",
+  "version": "0.17.1",
+  "description": "Hiccup data and the company brain in one install: read-only prod data through hx, the QueryGateway CLI, with your Google login (AWS SSO: AnalyticsRead, or FinanceRead for the finance team), and the brain connected on first start.",
   "dependencies": [
     "brain"
   ]
