@@ -6,11 +6,11 @@ if [ -z "$BRAIN_TOKEN_FILE" ] && [ ! -s "$HOME/.brain/token" ]; then
   echo "hiccup-data: connecting the company brain. Check the code in the browser and click Connect." >&2
   curl -fsSL 'https://brain-production-9a93.up.railway.app/login.sh?company=hiccup.com' | sh >&2 || echo "hiccup-data: brain not connected. Type /brain:login to try again." >&2
 fi
-# hx: a pinned build (HiccupHQ/claude-plugins release hx-3281cfe), used only when its SHA-256 is the one below.
+# hx: a pinned build (HiccupHQ/claude-plugins release hx-052e887), used only when its SHA-256 is the one below.
 # It lives in ~/.hiccup-data/bin, because the plugin folder changes with each plugin version.
 BIN="$HOME/.hiccup-data/bin"
-HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-3281cfe/hx-aarch64-apple-darwin
-HX_SHA=4bc41ea8d8c222f25d1135d15ed293c010f037d8fa50fee5257121e0f678cde2
+HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-052e887/hx-aarch64-apple-darwin
+HX_SHA=2a76ca9331327395b3cae8d4eb235b380bb18b13726b8b8b84d5e48bc1cfd893
 sha_of() { /usr/bin/shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
 # Apple silicon only; hw.optional.arm64 is 1 there in a Rosetta shell too.
 if [ "$(uname -s)" != Darwin ] || [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" != 1 ]; then
