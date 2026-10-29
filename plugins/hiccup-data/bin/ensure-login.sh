@@ -6,13 +6,13 @@ if [ -z "$BRAIN_TOKEN_FILE" ] && [ ! -s "$HOME/.brain/token" ]; then
   echo "hiccup-data: connecting the company brain. Check the code in the browser and click Connect." >&2
   curl -fsSL 'https://brain-production-9a93.up.railway.app/login.sh?company=hiccup.com' | sh >&2 || echo "hiccup-data: brain not connected. Type /brain:login to try again." >&2
 fi
-# hx: a pinned build (HiccupHQ/claude-plugins release hx-c32b8a6), used only when its SHA-256 is the one below.
+# hx: a pinned build (HiccupHQ/claude-plugins release hx-2446d88), used only when its SHA-256 is the one below.
 # It lives in ~/.hiccup-data/bin, because the plugin folder changes with each plugin version.
 # hx.version beside it names the plugin version that put it there. A Claude process started on an older plugin
 # keeps running that plugin's script, so this script replaces hx only when its own version is the same or newer.
 BIN="$HOME/.hiccup-data/bin"
-HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-c32b8a6/hx-aarch64-apple-darwin
-HX_SHA=af46064f849c26a59a60978d456c121e27dcaa297d92c50560cce60d56545d75
+HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-2446d88/hx-aarch64-apple-darwin
+HX_SHA=c56cc3dd17a5a509a29cda2722b1f661d7419ea109b35811ca252fe20e41336d
 sha_of() { /usr/bin/shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
 VERSION=$(sed -n 's/^ *"version": *"\([0-9.]*\)".*/\1/p' "$(dirname "$0")/../.claude-plugin/plugin.json" | head -1)
 HX_FROM=$(cat "$BIN/hx.version" 2>/dev/null)
