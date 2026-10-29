@@ -6,22 +6,33 @@ if [ -z "$BRAIN_TOKEN_FILE" ] && [ ! -s "$HOME/.brain/token" ]; then
   echo "hiccup-data: connecting the company brain. Check the code in the browser and click Connect." >&2
   curl -fsSL 'https://brain-production-9a93.up.railway.app/login.sh?company=hiccup.com' | sh >&2 || echo "hiccup-data: brain not connected. Type /brain:login to try again." >&2
 fi
-# hx: a pinned build (HiccupHQ/claude-plugins release hx-89fd1e3), used only when its SHA-256 is the one below.
+# hx: a pinned build (HiccupHQ/claude-plugins release hx-c32b8a6), used only when its SHA-256 is the one below.
 # It lives in ~/.hiccup-data/bin, because the plugin folder changes with each plugin version.
+# hx.version beside it names the plugin version that put it there. A Claude process started on an older plugin
+# keeps running that plugin's script, so this script replaces hx only when its own version is the same or newer.
 BIN="$HOME/.hiccup-data/bin"
 HX_URL=https://github.com/HiccupHQ/claude-plugins/releases/download/hx-c32b8a6/hx-aarch64-apple-darwin
 HX_SHA=af46064f849c26a59a60978d456c121e27dcaa297d92c50560cce60d56545d75
 sha_of() { /usr/bin/shasum -a 256 "$1" 2>/dev/null | cut -d' ' -f1; }
+VERSION=$(sed -n 's/^ *"version": *"\([0-9.]*\)".*/\1/p' "$(dirname "$0")/../.claude-plugin/plugin.json" | head -1)
+HX_FROM=$(cat "$BIN/hx.version" 2>/dev/null)
+# Whether version $1 is newer than version $2 (major.minor.patch).
+newer() { [ "$1" != "$2" ] && [ "$(printf '%s\n%s\n' "$1" "$2" | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)" = "$1" ]; }
+HX_NEWER=no; [ -x "$BIN/hx" ] && [ -n "$HX_FROM" ] && [ -n "$VERSION" ] && newer "$HX_FROM" "$VERSION" && HX_NEWER=yes
 # Apple silicon only; hw.optional.arm64 is 1 there in a Rosetta shell too.
 if [ "$(uname -s)" != Darwin ] || [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null)" != 1 ]; then
   echo "hiccup-data: hx runs only on Apple silicon Macs, so this machine reads no Hiccup data. Ask Ronny." >&2
+elif [ "$HX_NEWER" = yes ]; then
+  : # a newer plugin put its hx here; this session runs it too
 elif [ "$(sha_of "$BIN/hx")" != "$HX_SHA" ]; then
   mkdir -p "$BIN"
   if curl -fsSL --connect-timeout 10 --max-time 120 "$HX_URL" -o "$BIN/hx.$$" && [ "$(sha_of "$BIN/hx.$$")" = "$HX_SHA" ]; then
-    chmod +x "$BIN/hx.$$" && mv -f "$BIN/hx.$$" "$BIN/hx"
+    chmod +x "$BIN/hx.$$" && mv -f "$BIN/hx.$$" "$BIN/hx" && [ -n "$VERSION" ] && echo "$VERSION" > "$BIN/hx.version"
   else
     rm -f "$BIN/hx.$$"; echo "hiccup-data: could not install hx. Type /hiccup-data:login to try again." >&2
   fi
+elif [ -n "$VERSION" ] && [ "$HX_FROM" != "$VERSION" ]; then
+  echo "$VERSION" > "$BIN/hx.version"  # the pinned hx is here already (put by 0.17.3 or older): mark it
 fi
 # The Mongo MCP server (0.12.0 and older) is gone: remove its copies, its install and its entry in the desktop app.
 rm -rf "$BIN/mongodb-mcp.sh" "$BIN/mcp-watchdog.mjs" "$HOME"/.hiccup-data/mongodb-mcp-server-*
@@ -65,7 +76,7 @@ logged_in() {
   "$AWS" sts get-caller-identity --profile hiccup-analytics >/dev/null 2>&1 \
     || "$AWS" sts get-caller-identity --profile hiccup-analytics-read >/dev/null 2>&1
 }
-HX_OK=no; [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ] && HX_OK=yes
+HX_OK=no; { [ "$(sha_of "$BIN/hx")" = "$HX_SHA" ] || [ "$HX_NEWER" = yes ]; } && HX_OK=yes
 # Later Bash commands of this session find hx; a person's own hx earlier on PATH comes first.
 # Without an engineer's hiccup-prod profile, hx --env prod reads with the picked profile. The PATH and the
 # profile known so far go out before the login, which can wait for the browser; a later export wins.
